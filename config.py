@@ -9,7 +9,7 @@ load_dotenv(ROOT / ".env")
 
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen3.5:4b-mlx")
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-MAX_TOOL_ROUNDS = 3
+MAX_TOOL_ROUNDS = 5
 
 SYSTEM_PROMPT = (
     "You are JARVIS, a concise personal assistant running on the user's Mac. "
@@ -28,3 +28,9 @@ SPEAK_RATE = int(os.getenv("SPEAK_RATE", "190"))  # words per minute
 # Wake word (openWakeWord, fully local). Raise threshold if it triggers by accident.
 WAKE_WORD_MODEL = "hey_jarvis"
 WAKE_THRESHOLD = float(os.getenv("WAKE_THRESHOLD", "0.5"))
+
+# Memory / music
+DB_PATH = ROOT / "data" / "jarvis.db"
+MUSIC_APP = os.getenv("MUSIC_APP", "Spotify")  # or "Music"
+HISTORY_MESSAGES = 6
+MAX_TOOL_CALLS_PER_REQUEST = 6

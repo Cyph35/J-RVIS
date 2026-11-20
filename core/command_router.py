@@ -61,13 +61,16 @@ class ToolRegistry:
             summary = f"{tool.name}({', '.join(f'{k}={v!r}' for k, v in arguments.items())})"
             if confirm is None or not confirm(summary):
                 return {"ok": False, "error": "The user did not approve this action, so it was not performed."}
+        for pname, spec in tool.parameters.items():
+            if "enum" in spec and arguments[pname] not in spec["enum"]:
+                return {"ok": False, "error": f"Argument {pname!r} must be one of {spec['enum']}"}
         try:
             return {"ok": True, "result": str(tool.func(**arguments))}
         except Exception as exc:  # report honestly, never claim success
             return {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
 
 
-def default_registry() -> ToolRegistry:
+def default_registry(memory=None, brain=None) -> ToolRegistry:
     from actions.applications import close_application, open_application
     from actions.browser import open_website, search_web
     from actions.system import get_current_time, get_system_info
@@ -84,4 +87,37 @@ def default_registry() -> ToolRegistry:
                       {"name": {"type": "string", "description": "Application name"}}, sensitive=True))
     reg.register(Tool("get_system_info", "Get basic info about this Mac: macOS version, chip, RAM, free disk space, battery.",
                       get_system_info))
+    from actions.files import search_files
+    from actions.music import ACTIONS, music_control
+    from actions.workflows import WORKFLOWS
+
+    reg.register(Tool("search_files", "Find files by name in Documents, Downloads and Desktop (read-only).", search_files,
+                      {"query": {"type": "string", "description": "Part of the file name"}}))
+    reg.register(Tool("music_control", "Control the music app: play, pause, next, previous, or now_playing.", music_control,
+                      {"action": {"type": "string", "enum": ACTIONS, "description": "Music action"}}))
+
+    def run_workflow(name: str) -> str:
+        """Run a fixed, predefined list of tool calls. Stops at the first failure."""
+        report = []
+        for tool_name, args in WORKFLOWS[name]:
+            outcome = reg.execute(tool_name, args)
+            report.append(f"{tool_name}: {'ok' if outcome['ok'] else 'FAILED - ' + outcome['error']}")
+            if not outcome["ok"]:
+                raise RuntimeError(f"Workflow {name!r} stopped. " + "; ".join(report))
+        return f"Workflow {name!r} done. " + "; ".join(report)
+
+    reg.register(Tool("run_workflow", "Run a predefined multi-step routine: " + ", ".join(WORKFLOWS), run_workflow,
+                      {"name": {"type": "string", "enum": list(WORKFLOWS), "description": "Workflow name"}}))
+    if memory is not None:
+        def remember_preference(key: str, value: str) -> str:
+            memory.set_pref(key.strip().lower(), value.strip())
+            return f"Remembered {key}: {value}"
+        reg.register(Tool("remember_preference", "Save a lasting fact or preference about the user (e.g. favorite_music, name).",
+                          remember_preference, {"key": {"type": "string", "description": "Short label"},
+                                                "value": {"type": "string", "description": "The value to remember"}}))
+    if brain is not None:
+        from actions.screen import analyze_screen
+        reg.register(Tool("analyze_screen", "Take a screenshot and answer a question about what is on the screen.",
+                          lambda question: analyze_screen(question, brain),
+                          {"question": {"type": "string", "description": "What to look for on screen"}}, sensitive=True))
     return reg

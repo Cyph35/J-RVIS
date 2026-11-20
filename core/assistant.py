@@ -8,14 +8,25 @@ from core.command_router import ToolRegistry, default_registry
 
 class Assistant:
     def __init__(self, brain: Brain | None = None, registry: ToolRegistry | None = None,
-                 confirm: Callable[[str], bool] | None = None) -> None:
+                 confirm: Callable[[str], bool] | None = None, memory=None) -> None:
         self.confirm = confirm
+        self.memory = memory
         self.brain = brain or Brain()
-        self.registry = registry or default_registry()
-        self.messages: list[dict] = [{"role": "system", "content": config.SYSTEM_PROMPT}]
+        self.registry = registry or default_registry(memory=memory, brain=self.brain)
+        self.messages: list[dict] = [{"role": "system", "content": self._system_prompt()}]
+        if memory is not None:
+            self.messages += memory.recent_messages(config.HISTORY_MESSAGES)
         self.last_tool_calls: list[tuple[str, dict, dict]] = []  # (name, args, outcome)
 
+    def _system_prompt(self) -> str:
+        prompt = config.SYSTEM_PROMPT
+        prefs = self.memory.prefs() if self.memory is not None else {}
+        if prefs:
+            prompt += " Known facts about the user: " + "; ".join(f"{k} = {v}" for k, v in prefs.items()) + "."
+        return prompt
+
     def handle(self, user_text: str) -> str:
+        self.messages[0]["content"] = self._system_prompt()  # pick up newly remembered facts
         self.messages.append({"role": "user", "content": user_text})
         self.last_tool_calls = []
         reply = None
@@ -23,7 +34,8 @@ class Assistant:
             try:
                 msg = self.brain.chat(self.messages, self.registry.schemas())
             except Exception as exc:
-                self.messages.pop() if self.messages[-1]["role"] == "user" else None
+                if self.messages[-1]["role"] == "user":
+                    self.messages.pop()
                 return f"I can't reach my local AI model right now ({type(exc).__name__}). Is Ollama running? Try: ollama serve"
             self.messages.append(msg.model_dump(exclude_none=True) if hasattr(msg, "model_dump") else msg)
             if not msg.tool_calls:
@@ -31,10 +43,18 @@ class Assistant:
                 break
             for call in msg.tool_calls:
                 name, args = call.function.name, dict(call.function.arguments or {})
-                outcome = self.registry.execute(name, args, self.confirm)
+                if len(self.last_tool_calls) >= config.MAX_TOOL_CALLS_PER_REQUEST:
+                    outcome = {"ok": False, "error": "Tool call limit reached for this request."}
+                else:
+                    outcome = self.registry.execute(name, args, self.confirm)
                 self.last_tool_calls.append((name, args, outcome))
+                if self.memory is not None:
+                    self.memory.log_task(name, args, outcome["ok"])
                 content = outcome.get("result") if outcome["ok"] else "ERROR: " + outcome["error"]
                 self.messages.append({"role": "tool", "tool_name": name, "content": content})
         if reply is None:
             reply = "Sorry, I couldn't complete that request."
+        if self.memory is not None:
+            self.memory.add_message("user", user_text)
+            self.memory.add_message("assistant", reply)
         return reply

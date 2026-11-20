@@ -95,7 +95,14 @@ def wake_loop(assistant: Assistant) -> None:
 
 
 def main() -> None:
-    assistant = Assistant(confirm=ask_confirm)
+    from memory.conversation import Memory
+
+    memory = Memory()
+    if "--forget" in sys.argv:
+        memory.forget_all()
+        print("All saved history, preferences and task logs were deleted.")
+        return
+    assistant = Assistant(confirm=ask_confirm, memory=memory)
     if "--wake" in sys.argv:
         wake_loop(assistant)
         return
