@@ -24,3 +24,7 @@ WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base.en")
 # Text-to-speech (macOS `say`). Daniel (UK) suits JARVIS; list voices with: say -v '?'
 SPEAK_VOICE = os.getenv("SPEAK_VOICE", "Daniel")
 SPEAK_RATE = int(os.getenv("SPEAK_RATE", "190"))  # words per minute
+
+# Wake word (openWakeWord, fully local). Raise threshold if it triggers by accident.
+WAKE_WORD_MODEL = "hey_jarvis"
+WAKE_THRESHOLD = float(os.getenv("WAKE_THRESHOLD", "0.5"))
