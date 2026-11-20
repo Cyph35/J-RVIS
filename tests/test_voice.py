@@ -64,3 +64,18 @@ def test_mic_selection_prefers_named_device(monkeypatch):
     assert audio.input_device() == 2
     monkeypatch.setattr(audio.config, "MIC_DEVICE", "nonexistent")
     assert audio.input_device() is None
+
+
+def test_default_is_system_default_and_refresh_is_safe(monkeypatch):
+    import sounddevice as sd
+    from voice import audio
+
+    monkeypatch.setattr(audio.config, "MIC_DEVICE", "")
+    assert audio.input_device() is None  # auto: follow whatever macOS has selected
+    calls = []
+    monkeypatch.setattr(sd, "_terminate", lambda: calls.append("t"))
+    monkeypatch.setattr(sd, "_initialize", lambda: calls.append("i"))
+    audio.refresh_devices()
+    assert calls == ["t", "i"]
+    monkeypatch.setattr(sd, "_terminate", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
+    audio.refresh_devices()  # must never raise

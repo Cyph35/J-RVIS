@@ -198,13 +198,11 @@ class JarvisWindow(QWidget):
 
             self.bridge.status.emit("Loading voice models...")
             wake, transcriber = WakeWordDetector(), Transcriber()
+            wake.on_mic_change = lambda n: self.bridge.line.emit("info", f"Microphone: {n}")
             self.speaker = self.speaker or Speaker()
             self.verifier = SpeakerVerifier()
             self.record = lambda: record_utterance(on_status=lambda m: None)
             self.voice_ready = True
-            from voice.audio import input_name
-
-            self.bridge.line.emit("info", f"Microphone: {input_name()}")
             self.bridge.line.emit("info", "Voice ready." + ("" if self.verifier.enrolled()
                                   else " Tip: click 'Enroll my voice' so JARVIS only obeys you."))
 

@@ -44,6 +44,6 @@ SPEAKER_MODEL = ROOT / "data" / "models" / "campplus.onnx"
 VOICEPRINT_PATH = ROOT / "data" / "voiceprint.npy"
 SPEAKER_THRESHOLD = float(os.getenv("SPEAKER_THRESHOLD", "0.5"))  # higher = stricter
 
-# Microphone: substring of the input device name. "" = system default. Built-in mic is far cleaner
-# than a USB hub/monitor mic here. List devices with: python -c "import sounddevice as sd; print(sd.query_devices())"
-MIC_DEVICE = os.getenv("MIC_DEVICE", "MacBook")
+# Microphone: "" (default) = automatically use whatever input macOS currently has selected, and follow
+# changes (plug in a headset and it switches). Or set part of a device name to pin one, e.g. "MacBook".
+MIC_DEVICE = os.getenv("MIC_DEVICE", "")
