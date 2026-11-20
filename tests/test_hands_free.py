@@ -97,3 +97,12 @@ def test_on_turn_receives_structured_result():
                    lambda t: True, StateTracker(), threading.Event(), threading.Event(), print,
                    on_turn=lambda u, r, c: turns.append((u, r)))
     assert turns == [("hello", "ok: hello")]
+
+
+def test_strip_wake_phrase():
+    s = hands_free.strip_wake_phrase
+    assert s("Hey Jarvis.") == "" and s("jarvis") == "" and s("Hey, Jarvis!") == ""
+    assert s("Hey Jarvis, open Calculator") == "open Calculator"
+    assert s("Jarvis what time is it?") == "what time is it?"
+    assert s("open Calculator") == "open Calculator"
+    assert s("tell Jarvis hello") == "tell Jarvis hello"  # only a leading wake phrase is removed

@@ -1,4 +1,5 @@
 """Hands-free loop: wake word -> record -> transcribe -> assistant -> speak."""
+import re
 import subprocess
 import threading
 from typing import Callable
@@ -13,6 +14,14 @@ def chime() -> None:
         subprocess.run(["afplay", "/System/Library/Sounds/Tink.aiff"], timeout=3)
     except Exception:
         pass
+
+
+_WAKE_PREFIX = re.compile(r"^\s*(?:(?:hey|hi|ok|okay)[\s,]+)?jarvis\b[\s,.!?:;-]*", re.I)
+
+
+def strip_wake_phrase(text: str) -> str:
+    """'Hey Jarvis, open Calculator' -> 'open Calculator'; a bare 'Hey Jarvis.' -> ''."""
+    return _WAKE_PREFIX.sub("", text, count=1).strip()
 
 
 def is_yes(text: str) -> bool:
@@ -51,7 +60,7 @@ def run(assistant, wake, record: Callable, transcribe: Callable[[object], str], 
                 if not accepted:
                     log(f"(voice not recognized - ignored, similarity {score:.2f})")
                     continue
-            text = transcribe(audio)
+            text = strip_wake_phrase(transcribe(audio))
             if not text:
                 log("(couldn't make out any words)")
                 continue
