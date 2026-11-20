@@ -9,6 +9,7 @@ import config
 def clean_for_speech(text: str) -> str:
     """Strip markdown, URLs and emoji that sound bad when read aloud."""
     text = re.sub(r"https?://\S+", "link", text)
+    text = re.sub(r"\s*[\u2013\u2014]\s*", ", ", text)  # dashes become a natural pause, not a dropped word
     text = re.sub(r"[`*_#>~\[\]]", "", text)
     text = re.sub(r"[^\x00-ɏ‘-”…]", "", text)  # drop emoji/symbols
     return re.sub(r"\s+", " ", text).strip()
@@ -89,22 +90,30 @@ class NaturalSpeaker:
         with self._lock:
             self._stopped.clear()
             try:
+                import numpy as np
                 import sounddevice as sd
-                from concurrent.futures import ThreadPoolExecutor
 
-                sentences = split_sentences(text)
-                with ThreadPoolExecutor(max_workers=1) as pool:
-                    pending = pool.submit(self._synth, sentences[0])
-                    for i in range(len(sentences)):
-                        audio, rate = pending.result()
-                        if i + 1 < len(sentences):  # synthesize the next sentence while this one plays
-                            pending = pool.submit(self._synth, sentences[i + 1])
-                        if self._stopped.is_set():
-                            return True
-                        sd.play(audio, rate)
-                        sd.wait()
-                        if self._stopped.is_set():
-                            return True
+                from voice import audio
+
+                # 1) Synthesize everything first so the CPU is idle during playback (no glitches).
+                pieces, rate = [], 24000
+                for sentence in split_sentences(text):
+                    if self._stopped.is_set():
+                        return True
+                    chunk, rate = self._synth(sentence)
+                    chunk = np.asarray(chunk, dtype=np.float32).copy()
+                    fade = int(rate * 0.012)  # 12 ms fades remove clicks at sentence edges
+                    chunk[:fade] *= np.linspace(0, 1, fade)
+                    chunk[-fade:] *= np.linspace(1, 0, fade)
+                    pieces += [chunk, np.zeros(int(rate * 0.18), dtype=np.float32)]  # natural pause
+                wave = np.concatenate(pieces)
+                # 2) Play one continuous buffer with a large, safe audio buffer.
+                audio.OUTPUT_ACTIVE.set()
+                try:
+                    sd.play(wave, rate, latency="high")
+                    sd.wait()
+                finally:
+                    audio.OUTPUT_ACTIVE.clear()
                 return True
             except Exception:
                 return self.fallback.speak(text)

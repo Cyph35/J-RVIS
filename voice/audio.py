@@ -1,7 +1,11 @@
 """Microphone selection. Default: follow whatever input macOS has selected, even when it changes."""
+import threading
+
 import sounddevice as sd
 
 import config
+
+OUTPUT_ACTIVE = threading.Event()  # set while JARVIS is speaking
 
 
 def refresh_devices() -> None:
@@ -9,6 +13,8 @@ def refresh_devices() -> None:
 
     Only call this when NO audio stream is open (PortAudio caches the device list).
     """
+    if OUTPUT_ACTIVE.is_set():
+        return  # re-initialising PortAudio would cut off speech in progress
     try:
         sd._terminate()
         sd._initialize()

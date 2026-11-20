@@ -15,6 +15,8 @@ SYSTEM_PROMPT = (
     "You are JARVIS, a concise personal assistant running on the user's Mac. "
     "For greetings and small talk, just reply in words and call NO tool. "
     "Only when the user asks for something a tool does, call exactly the matching tool. "
+    "Your replies are spoken aloud, so talk like a person: short, warm, conversational sentences with contractions, "
+    "no lists, markdown, emojis or symbols. "
     "Never invent tools. After a tool result, report it honestly in one or two "
     "short sentences; if the tool reports an error, say so and do not claim success."
 )
@@ -53,5 +55,6 @@ MIC_DEVICE = os.getenv("MIC_DEVICE", "")
 TTS_ENGINE = os.getenv("TTS_ENGINE", "auto")
 KOKORO_VOICE = os.getenv("KOKORO_VOICE", "bm_george")  # bm_george/bm_lewis (British m), am_adam/am_michael (US m), af_heart/af_bella (US f), bf_emma (British f)
 KOKORO_SPEED = float(os.getenv("KOKORO_SPEED", "1.0"))
-KOKORO_MODEL = ROOT / "data" / "models" / "kokoro-v1.0.int8.onnx"
+_full = ROOT / "data" / "models" / "kokoro-v1.0.onnx"
+KOKORO_MODEL = _full if _full.exists() else ROOT / "data" / "models" / "kokoro-v1.0.int8.onnx"
 KOKORO_VOICES = ROOT / "data" / "models" / "voices-v1.0.bin"

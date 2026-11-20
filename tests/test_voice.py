@@ -92,3 +92,8 @@ def test_make_speaker_falls_back_to_say_when_models_missing(monkeypatch, tmp_pat
     from voice import speaker
     monkeypatch.setattr(speaker.config, "KOKORO_MODEL", tmp_path / "none.onnx")
     assert type(speaker.make_speaker()).__name__ == "Speaker"
+
+
+def test_dashes_become_pauses():
+    from voice.speaker import clean_for_speech
+    assert clean_for_speech("tasks—like opening apps") == "tasks, like opening apps"
