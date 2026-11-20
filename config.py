@@ -34,3 +34,7 @@ DB_PATH = ROOT / "data" / "jarvis.db"
 MUSIC_APP = os.getenv("MUSIC_APP", "Spotify")  # or "Music"
 HISTORY_MESSAGES = 6
 MAX_TOOL_CALLS_PER_REQUEST = 6
+
+# Menu bar app + global hotkeys (pynput syntax). Needs Input Monitoring permission.
+HOTKEY_WAKE = os.getenv("HOTKEY_WAKE", "<ctrl>+<alt>+j")
+HOTKEY_MUTE = os.getenv("HOTKEY_MUTE", "<ctrl>+<alt>+m")

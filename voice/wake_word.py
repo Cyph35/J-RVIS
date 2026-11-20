@@ -25,8 +25,9 @@ class WakeWordDetector:
     def reset(self) -> None:
         self.model.reset()
 
-    def wait_for_wake(self, stop: threading.Event, muted: threading.Event) -> bool:
-        """Block until the wake word is heard (True) or `stop` is set (False).
+    def wait_for_wake(self, stop: threading.Event, muted: threading.Event,
+                      manual: threading.Event | None = None) -> bool:
+        """Block until the wake word is heard OR `manual` (hotkey/menu) is set (True), or `stop` is set (False).
 
         While `muted` is set the microphone stream is fully closed.
         """
@@ -35,10 +36,15 @@ class WakeWordDetector:
         self.reset()
         while not stop.is_set():
             if muted.is_set():
+                if manual is not None:
+                    manual.clear()  # a hotkey press while muted is ignored
                 time.sleep(0.2)
                 continue
             with sd.InputStream(samplerate=16000, channels=1, dtype="int16", blocksize=WAKE_CHUNK) as stream:
                 while not stop.is_set() and not muted.is_set():
+                    if manual is not None and manual.is_set():
+                        manual.clear()
+                        return True
                     data, _ = stream.read(WAKE_CHUNK)
                     if self.heard(data[:, 0]):
                         return True

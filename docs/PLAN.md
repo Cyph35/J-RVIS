@@ -39,7 +39,7 @@ A vision model (Phase 6) loads on demand.
 | 4 | TTS via macOS `say` (Daniel voice, `--speak` / `--voice`) | BUILT (v0.2), audible check by user pending |
 | 5 | openWakeWord "hey_jarvis", state machine, mute (`python main.py --wake`) | BUILT, live mic test pending |
 | 6 | Memory (SQLite), file search, music, local vision, bounded workflows | BUILT; screen capture needs Screen Recording permission |
-| 7 | PySide6 dashboard | Desktop app |
+| 7 | Menu bar status icon + global hotkeys (`--menubar`); full PySide6 dashboard still to do | PARTIAL |
 
 ## Operating notes
 - Start Ollama after a reboot: `ollama serve` (not set to start at login).

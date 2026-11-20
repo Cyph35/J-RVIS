@@ -21,7 +21,8 @@ def is_yes(text: str) -> bool:
 
 
 def run(assistant, wake, record: Callable, transcribe: Callable[[object], str], say: Callable[[str], bool],
-        tracker: StateTracker, stop: threading.Event, muted: threading.Event, log=print) -> None:
+        tracker: StateTracker, stop: threading.Event, muted: threading.Event, log=print,
+        manual: threading.Event | None = None) -> None:
     def confirm(summary: str) -> bool:
         """Spoken confirmation. Silence or anything but a clear yes means NO."""
         tracker.set(State.SPEAKING)
@@ -35,7 +36,7 @@ def run(assistant, wake, record: Callable, transcribe: Callable[[object], str], 
     assistant.confirm = confirm
     while not stop.is_set():
         tracker.set(State.MUTED if muted.is_set() else State.IDLE)
-        if not wake.wait_for_wake(stop, muted):
+        if not wake.wait_for_wake(stop, muted, manual):
             break
         try:
             tracker.set(State.LISTENING)

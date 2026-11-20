@@ -8,7 +8,7 @@ class FakeWake:
     def __init__(self, n):
         self.n = n
 
-    def wait_for_wake(self, stop, muted):
+    def wait_for_wake(self, stop, muted, manual=None):
         if self.n == 0:
             return False
         self.n -= 1
@@ -57,3 +57,24 @@ def test_error_does_not_kill_loop():
 def test_spoken_confirmation_defaults_to_no():
     assert hands_free.is_yes("Yes.") and hands_free.is_yes("go ahead please")
     assert not hands_free.is_yes("") and not hands_free.is_yes("no") and not hands_free.is_yes("maybe")
+
+
+def test_manual_trigger_passed_to_wake_and_icons():
+    seen = []
+
+    class W:
+        def wait_for_wake(self, stop, muted, manual=None):
+            seen.append(manual)
+            return False
+
+    ev = threading.Event()
+    hands_free.run(FakeAssistant(), W(), lambda: None, lambda a: "", lambda t: True, StateTracker(),
+                   threading.Event(), threading.Event(), print, manual=ev)
+    assert seen == [ev]
+
+
+def test_icon_colors():
+    from interface.menubar import icon_for
+    assert icon_for(State.IDLE, False) == "🟢"
+    assert icon_for(State.LISTENING, False) == icon_for(State.SPEAKING, False) == "🟠"
+    assert icon_for(State.IDLE, True) == "⚫" and icon_for(State.ERROR, False) == "🔴"

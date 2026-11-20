@@ -103,6 +103,11 @@ def main() -> None:
         print("All saved history, preferences and task logs were deleted.")
         return
     assistant = Assistant(confirm=ask_confirm, memory=memory)
+    if "--menubar" in sys.argv:
+        from interface.menubar import JarvisMenuBar
+
+        JarvisMenuBar(assistant).run()
+        return
     if "--wake" in sys.argv:
         wake_loop(assistant)
         return
