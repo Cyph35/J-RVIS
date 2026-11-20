@@ -40,3 +40,29 @@ def test_registry_validation():
 def test_tool_failure_reported_not_raised():
     out = make_reg().execute("boom", {})
     assert out["ok"] is False and "ZeroDivisionError" in out["error"]
+
+
+def test_sensitive_tool_needs_confirmation():
+    calls = []
+    reg = ToolRegistry()
+    reg.register(Tool("danger", "d", lambda: calls.append(1) or "done", sensitive=True))
+    assert not reg.execute("danger", {})["ok"] and calls == []            # no callback -> refused
+    assert not reg.execute("danger", {}, confirm=lambda s: False)["ok"] and calls == []
+    assert reg.execute("danger", {}, confirm=lambda s: True)["ok"] and calls == [1]
+
+
+def test_system_info_has_basics():
+    from actions.system import get_system_info
+    info = get_system_info()
+    assert "macOS" in info and "GB RAM" in info
+
+
+def test_ollama_down_gives_friendly_message():
+    from core.assistant import Assistant
+
+    class DeadBrain:
+        def chat(self, *a, **k):
+            raise ConnectionError("down")
+
+    reply = Assistant(brain=DeadBrain()).handle("hi")
+    assert "Ollama" in reply

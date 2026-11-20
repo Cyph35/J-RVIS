@@ -1,9 +1,13 @@
 from core.assistant import Assistant
 
 
+def ask_confirm(summary: str) -> bool:
+    return input(f"  JARVIS wants to run {summary}. Allow? [y/N] ").strip().lower() in {"y", "yes"}
+
+
 def main() -> None:
     print("JARVIS v0.1 - text mode. Type 'quit' to exit.")
-    assistant = Assistant()
+    assistant = Assistant(confirm=ask_confirm)
     while True:
         try:
             text = input("you> ").strip()

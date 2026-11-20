@@ -26,3 +26,16 @@ def open_application(name: str) -> str:
     if result.returncode != 0:
         raise RuntimeError(f"Could not open {app}: {result.stderr.strip()}")
     return f"Opened {app}"
+
+
+def close_application(name: str) -> str:
+    app = APPROVED_APPS.get(name.strip().lower())
+    if app is None:
+        raise ValueError(f"{name!r} is not an approved app.")
+    result = subprocess.run(
+        ["osascript", "-e", f'tell application "{app}" to quit'],
+        capture_output=True, text=True, timeout=10,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Could not close {app}: {result.stderr.strip()}")
+    return f"Closed {app}"

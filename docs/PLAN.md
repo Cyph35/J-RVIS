@@ -33,8 +33,8 @@ A vision model (Phase 6) loads on demand.
 | Phase | Work | Done when |
 |---|---|---|
 | 0 | Python 3.12 venv, Ollama, model, scaffold, Git | DONE: `python main.py` runs, first commit made |
-| 1 | `core/brain.py`, tool registry, validation, retry, text chat loop | Typed request selects the right tool with validated args |
-| 2 | Actions: time, apps, URLs, web search, system info, confirmations | Useful typed commands (v0.1) |
+| 1 | `core/brain.py`, tool registry, validation, retry, text chat loop | DONE |
+| 2 | Actions: time, apps (open/close), URLs, web search, system info, confirmation gate | DONE (v0.1) |
 | 3 | Mic capture + local Whisper | Spoken commands |
 | 4 | TTS | Spoken replies (v0.2) |
 | 5 | openWakeWord, state machine, mute | Hands-free "Hey Jarvis" (v1.0) |
