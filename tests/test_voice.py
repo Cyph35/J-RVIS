@@ -79,3 +79,16 @@ def test_default_is_system_default_and_refresh_is_safe(monkeypatch):
     assert calls == ["t", "i"]
     monkeypatch.setattr(sd, "_terminate", lambda: (_ for _ in ()).throw(RuntimeError("boom")))
     audio.refresh_devices()  # must never raise
+
+
+def test_split_sentences_merges_tiny_fragments():
+    from voice.speaker import split_sentences
+    assert split_sentences("Ok. The time is seven thirty. Anything else?") == [
+        "Ok. The time is seven thirty.", "Anything else?"]
+    assert split_sentences("Hello there") == ["Hello there"]
+
+
+def test_make_speaker_falls_back_to_say_when_models_missing(monkeypatch, tmp_path):
+    from voice import speaker
+    monkeypatch.setattr(speaker.config, "KOKORO_MODEL", tmp_path / "none.onnx")
+    assert type(speaker.make_speaker()).__name__ == "Speaker"

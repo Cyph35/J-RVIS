@@ -48,3 +48,10 @@ SPEAKER_THRESHOLD = float(os.getenv("SPEAKER_THRESHOLD", "0.5"))  # higher = str
 # Microphone: "" (default) = automatically use whatever input macOS currently has selected, and follow
 # changes (plug in a headset and it switches). Or set part of a device name to pin one, e.g. "MacBook".
 MIC_DEVICE = os.getenv("MIC_DEVICE", "")
+
+# Natural neural voice (Kokoro, fully local). TTS_ENGINE: "auto" (Kokoro if installed, else macOS say), "kokoro", "say".
+TTS_ENGINE = os.getenv("TTS_ENGINE", "auto")
+KOKORO_VOICE = os.getenv("KOKORO_VOICE", "bm_george")  # bm_george/bm_lewis (British m), am_adam/am_michael (US m), af_heart/af_bella (US f), bf_emma (British f)
+KOKORO_SPEED = float(os.getenv("KOKORO_SPEED", "1.0"))
+KOKORO_MODEL = ROOT / "data" / "models" / "kokoro-v1.0.int8.onnx"
+KOKORO_VOICES = ROOT / "data" / "models" / "voices-v1.0.bin"

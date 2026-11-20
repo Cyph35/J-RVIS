@@ -52,3 +52,80 @@ class Speaker:
         """Interrupt speech in progress (e.g. from another thread or Ctrl+C)."""
         if self._proc and self._proc.poll() is None:
             self._proc.terminate()
+
+
+def split_sentences(text: str) -> list[str]:
+    """Sentence chunks so playback starts after the first one is synthesized."""
+    parts = [p.strip() for p in re.split(r"(?<=[.!?])\s+", text) if p.strip()]
+    merged: list[str] = []
+    for p in parts:
+        if merged and len(merged[-1]) < 25:  # avoid tiny fragments like "Ok."
+            merged[-1] += " " + p
+        else:
+            merged.append(p)
+    return merged
+
+
+class NaturalSpeaker:
+    """Local neural TTS (Kokoro). Falls back to the macOS `say` voice if anything goes wrong."""
+
+    def __init__(self, voice: str = config.KOKORO_VOICE, speed: float = config.KOKORO_SPEED) -> None:
+        from kokoro_onnx import Kokoro
+
+        self.voice, self.speed = voice, speed
+        self.lang = "en-gb" if voice.startswith("b") else "en-us"
+        self.engine = Kokoro(str(config.KOKORO_MODEL), str(config.KOKORO_VOICES))
+        self.fallback = Speaker()
+        self._lock = threading.Lock()
+        self._stopped = threading.Event()
+
+    def _synth(self, sentence: str):
+        return self.engine.create(sentence, voice=self.voice, speed=self.speed, lang=self.lang)
+
+    def speak(self, text: str) -> bool:
+        text = clean_for_speech(text)
+        if not text:
+            return True
+        with self._lock:
+            self._stopped.clear()
+            try:
+                import sounddevice as sd
+                from concurrent.futures import ThreadPoolExecutor
+
+                sentences = split_sentences(text)
+                with ThreadPoolExecutor(max_workers=1) as pool:
+                    pending = pool.submit(self._synth, sentences[0])
+                    for i in range(len(sentences)):
+                        audio, rate = pending.result()
+                        if i + 1 < len(sentences):  # synthesize the next sentence while this one plays
+                            pending = pool.submit(self._synth, sentences[i + 1])
+                        if self._stopped.is_set():
+                            return True
+                        sd.play(audio, rate)
+                        sd.wait()
+                        if self._stopped.is_set():
+                            return True
+                return True
+            except Exception:
+                return self.fallback.speak(text)
+
+    def stop(self) -> None:
+        self._stopped.set()
+        try:
+            import sounddevice as sd
+
+            sd.stop()
+        except Exception:
+            pass
+        self.fallback.stop()
+
+
+def make_speaker():
+    """Best available voice: Kokoro neural voice if set up, otherwise the macOS voice."""
+    if config.TTS_ENGINE != "say" and config.KOKORO_MODEL.exists() and config.KOKORO_VOICES.exists():
+        try:
+            return NaturalSpeaker()
+        except Exception:
+            if config.TTS_ENGINE == "kokoro":
+                raise
+    return Speaker()

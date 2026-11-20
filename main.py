@@ -63,12 +63,12 @@ def wake_loop(assistant: Assistant) -> None:
     from core import hands_free
     from core.state import State, StateTracker
     from voice.listener import record_utterance
-    from voice.speaker import Speaker
+    from voice.speaker import make_speaker
     from voice.transcriber import Transcriber
     from voice.wake_word import WakeWordDetector
 
     print("Loading models (wake word + speech)...")
-    wake, transcriber, speaker = WakeWordDetector(), Transcriber(), Speaker()
+    wake, transcriber, speaker = WakeWordDetector(), Transcriber(), make_speaker()
     stop, muted = threading.Event(), threading.Event()
     tracker = StateTracker(lambda s: print(f"[{s.value}]"))
 
@@ -105,9 +105,9 @@ def main() -> None:
     assistant = Assistant(confirm=ask_confirm, memory=memory)
     if "--gui" in sys.argv or "--menubar" in sys.argv:
         from interface import dashboard
-        from voice.speaker import Speaker
+        from voice.speaker import make_speaker
 
-        dashboard.run(assistant, Speaker())
+        dashboard.run(assistant, make_speaker())
         return
     if "--enroll" in sys.argv:
         from core.hands_free import chime
@@ -122,9 +122,9 @@ def main() -> None:
         return
     speaker = None
     if "--voice" in sys.argv or "--speak" in sys.argv:
-        from voice.speaker import Speaker
+        from voice.speaker import make_speaker
 
-        speaker = Speaker()
+        speaker = make_speaker()
     (voice_loop if "--voice" in sys.argv else text_loop)(assistant, speaker)
 
 

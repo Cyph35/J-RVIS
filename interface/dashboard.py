@@ -191,7 +191,7 @@ class JarvisWindow(QWidget):
     def _voice_worker(self) -> None:
         try:
             from voice.listener import record_utterance
-            from voice.speaker import Speaker
+            from voice.speaker import make_speaker
             from voice.speaker_id import SpeakerVerifier
             from voice.transcriber import Transcriber
             from voice.wake_word import WakeWordDetector
@@ -199,7 +199,7 @@ class JarvisWindow(QWidget):
             self.bridge.status.emit("Loading voice models...")
             wake, transcriber = WakeWordDetector(), Transcriber()
             wake.on_mic_change = lambda n: self.bridge.line.emit("info", f"Microphone: {n}")
-            self.speaker = self.speaker or Speaker()
+            self.speaker = self.speaker or make_speaker()
             self.verifier = SpeakerVerifier()
             self.record = lambda: record_utterance(on_status=lambda m: None)
             self.voice_ready = True
