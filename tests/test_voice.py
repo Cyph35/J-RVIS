@@ -26,3 +26,19 @@ def test_max_length_cuts_off_long_speech():
 def test_pause_shorter_than_silence_does_not_end():
     state, _ = run([0.5] * 5 + [0.0] * 5 + [0.5] * 5, silence_sec=1.0)
     assert state == "continue"
+
+
+def test_clean_for_speech():
+    from voice.speaker import clean_for_speech
+    out = clean_for_speech("**Done!** 🎉 Opened https://google.com/search?q=x `now`")
+    assert out == "Done! Opened link now"
+
+
+def test_speaker_reports_failure_without_raising(monkeypatch):
+    import subprocess
+    from voice.speaker import Speaker
+
+    def boom(*a, **k):
+        raise OSError("no audio")
+    monkeypatch.setattr(subprocess, "Popen", boom)
+    assert Speaker().speak("hello") is False

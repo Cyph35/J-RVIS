@@ -36,7 +36,7 @@ A vision model (Phase 6) loads on demand.
 | 1 | `core/brain.py`, tool registry, validation, retry, text chat loop | DONE |
 | 2 | Actions: time, apps (open/close), URLs, web search, system info, confirmation gate | DONE (v0.1) |
 | 3 | Mic capture + local Whisper (`python main.py --voice`) | BUILT, mic live test pending |
-| 4 | TTS | Spoken replies (v0.2) |
+| 4 | TTS via macOS `say` (Daniel voice, `--speak` / `--voice`) | BUILT (v0.2), audible check by user pending |
 | 5 | openWakeWord, state machine, mute | Hands-free "Hey Jarvis" (v1.0) |
 | 6 | Memory (SQLite), file search, music, local vision | Personalization |
 | 7 | PySide6 dashboard | Desktop app |
