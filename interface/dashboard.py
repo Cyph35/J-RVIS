@@ -49,13 +49,16 @@ class JarvisWindow(QWidget):
         self.voice_ready = False
         self.verifier = None
         self.record = None
+        self.enrolling = False
 
         self.setWindowTitle("JARVIS")
         self.resize(560, 680)
         self.setStyleSheet("QWidget{background:#1c1c1e;color:#f2f2f7;font-size:14px}"
                            "QTextBrowser,QLineEdit{background:#2c2c2e;border:1px solid #3a3a3c;border-radius:8px;padding:8px}"
                            "QPushButton{background:#3a3a3c;border:none;border-radius:8px;padding:8px 12px}"
-                           "QPushButton:hover{background:#48484a}")
+                           "QPushButton:hover{background:#48484a}"
+                           "QCheckBox::indicator{width:18px;height:18px;border-radius:4px;border:1px solid #8e8e93;background:#2c2c2e}"
+                           "QCheckBox::indicator:checked{background:#ff9500;border-color:#ff9500}")
         self.dot = QLabel("●")
         self.status_label = QLabel("Starting...")
         self.wake_btn = QPushButton("Wake (⌃⌥J)")
@@ -141,7 +144,7 @@ class JarvisWindow(QWidget):
         enrolled = self.verifier is not None and self.verifier.enrolled()
         self.voice_label.setText("Only your enrolled voice is accepted" if enrolled
                                  else "Voice check off: any voice is accepted")
-        self.enroll_btn.setEnabled(self.voice_ready)
+        self.enroll_btn.setEnabled(self.voice_ready and not self.enrolling)
 
     # ------------------------------------------------------------------ typed requests
     def submit(self) -> None:
@@ -199,6 +202,9 @@ class JarvisWindow(QWidget):
             self.verifier = SpeakerVerifier()
             self.record = lambda: record_utterance(on_status=lambda m: None)
             self.voice_ready = True
+            from voice.audio import input_name
+
+            self.bridge.line.emit("info", f"Microphone: {input_name()}")
             self.bridge.line.emit("info", "Voice ready." + ("" if self.verifier.enrolled()
                                   else " Tip: click 'Enroll my voice' so JARVIS only obeys you."))
 
@@ -222,8 +228,9 @@ class JarvisWindow(QWidget):
         self.muted.clear() if self.muted.is_set() else self.muted.set()
 
     def start_enrollment(self) -> None:
-        if not self.voice_ready:
+        if not self.voice_ready or self.enrolling:
             return
+        self.enrolling = True
         self.enroll_btn.setEnabled(False)
         threading.Thread(target=self._enroll_worker, daemon=True).start()
 
@@ -236,13 +243,17 @@ class JarvisWindow(QWidget):
         self.muted.set()  # closes the wake-word microphone stream while we record
         time.sleep(0.6)
         try:
+            from voice.listener import describe_last
+
             msg = run_enrollment(self.verifier, self.record, lambda t: self.bridge.line.emit("info", t),
-                                 hands_free.chime)
+                                 hands_free.chime, describe_last)
         except Exception as exc:
             msg = f"Enrollment error: {type(exc).__name__}: {exc}"
+        finally:
+            self.enrolling = False
+            if not was_muted:
+                self.muted.clear()
         self.bridge.line.emit("info", msg)
-        if not was_muted:
-            self.muted.clear()
 
     def forget_voice(self) -> None:
         if self.verifier is not None:

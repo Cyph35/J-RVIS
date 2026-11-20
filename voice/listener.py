@@ -6,6 +6,11 @@ SAMPLE_RATE = 16000
 CHUNK = 1920                      # 120 ms = 4 x 480-sample VAD frames
 CHUNK_SEC = CHUNK / SAMPLE_RATE
 SPEECH_PROB = 0.5
+last_stats = {"max_prob": 0.0, "peak": 0.0}  # why the last recording failed
+
+
+def describe_last() -> str:
+    return f"mic level {last_stats['peak']:.2f}, speech confidence {last_stats['max_prob']:.2f}"
 
 
 class EndpointDetector:
@@ -44,16 +49,23 @@ def record_utterance(on_status=print) -> np.ndarray | None:
     import sounddevice as sd
     from openwakeword.vad import VAD
 
+    from voice.audio import input_device
+
     vad = VAD()
     detector = EndpointDetector()
     frames: list[np.ndarray] = []
-    with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="int16", blocksize=CHUNK) as stream:
+    last_stats.update(max_prob=0.0, peak=0.0)
+    with sd.InputStream(samplerate=SAMPLE_RATE, channels=1, dtype="int16", blocksize=CHUNK,
+                        device=input_device()) as stream:
         on_status("[listening...]")
         while True:
             data, _ = stream.read(CHUNK)
             chunk = data[:, 0].copy()
             frames.append(chunk)
-            state = detector.feed(float(vad.predict(chunk, frame_size=480)))
+            prob = float(vad.predict(chunk, frame_size=480))
+            last_stats["max_prob"] = max(last_stats["max_prob"], prob)
+            last_stats["peak"] = max(last_stats["peak"], float(np.abs(chunk).max()) / 32768)
+            state = detector.feed(prob)
             if state == "timeout":
                 return None
             if state == "done":

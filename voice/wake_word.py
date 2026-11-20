@@ -33,6 +33,8 @@ class WakeWordDetector:
         """
         import sounddevice as sd
 
+        from voice.audio import input_device
+
         self.reset()
         while not stop.is_set():
             if muted.is_set():
@@ -40,7 +42,8 @@ class WakeWordDetector:
                     manual.clear()  # a hotkey press while muted is ignored
                 time.sleep(0.2)
                 continue
-            with sd.InputStream(samplerate=16000, channels=1, dtype="int16", blocksize=WAKE_CHUNK) as stream:
+            with sd.InputStream(samplerate=16000, channels=1, dtype="int16", blocksize=WAKE_CHUNK,
+                                device=input_device()) as stream:
                 while not stop.is_set() and not muted.is_set():
                     if manual is not None and manual.is_set():
                         manual.clear()

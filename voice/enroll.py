@@ -13,7 +13,8 @@ PHRASES = [
 
 
 def run_enrollment(verifier, record: Callable[[], np.ndarray | None], say: Callable[[str], None],
-                   chime: Callable[[], None] = lambda: None) -> str:
+                   chime: Callable[[], None] = lambda: None,
+                   describe: Callable[[], str] = lambda: "") -> str:
     samples = []
     for i, phrase in enumerate(PHRASES, 1):
         for attempt in range(2):
@@ -23,7 +24,7 @@ def run_enrollment(verifier, record: Callable[[], np.ndarray | None], say: Calla
             if audio is not None and len(audio) >= 16000:  # at least 1 second of speech
                 samples.append(audio)
                 break
-            say("   didn't catch that, trying once more...")
+            say(f"   didn't catch that ({describe()}), trying once more...")
     if len(samples) < 3:
         return "Enrollment failed: not enough clear voice samples. Try again in a quieter spot."
     scores = verifier.enroll(samples)

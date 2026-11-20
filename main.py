@@ -112,10 +112,10 @@ def main() -> None:
     if "--enroll" in sys.argv:
         from core.hands_free import chime
         from voice.enroll import run_enrollment
-        from voice.listener import record_utterance
+        from voice.listener import describe_last, record_utterance
         from voice.speaker_id import SpeakerVerifier
 
-        print(run_enrollment(SpeakerVerifier(), lambda: record_utterance(on_status=lambda m: None), print, chime))
+        print(run_enrollment(SpeakerVerifier(), lambda: record_utterance(on_status=lambda m: None), print, chime, describe_last))
         return
     if "--wake" in sys.argv:
         wake_loop(assistant)

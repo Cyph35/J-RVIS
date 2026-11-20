@@ -43,3 +43,7 @@ HOTKEY_MUTE = os.getenv("HOTKEY_MUTE", "<ctrl>+<alt>+m")
 SPEAKER_MODEL = ROOT / "data" / "models" / "campplus.onnx"
 VOICEPRINT_PATH = ROOT / "data" / "voiceprint.npy"
 SPEAKER_THRESHOLD = float(os.getenv("SPEAKER_THRESHOLD", "0.5"))  # higher = stricter
+
+# Microphone: substring of the input device name. "" = system default. Built-in mic is far cleaner
+# than a USB hub/monitor mic here. List devices with: python -c "import sounddevice as sd; print(sd.query_devices())"
+MIC_DEVICE = os.getenv("MIC_DEVICE", "MacBook")

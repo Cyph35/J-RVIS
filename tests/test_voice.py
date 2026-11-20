@@ -50,3 +50,17 @@ def test_speaker_reports_failure_without_raising(monkeypatch):
 def test_single_noise_spike_is_not_speech():
     state, _ = run([0.0, 0.9, 0.0, 0.0, 0.9, 0.0] * 5, no_speech_timeout=3.0)
     assert state == "timeout"
+
+
+def test_mic_selection_prefers_named_device(monkeypatch):
+    import sounddevice as sd
+    from voice import audio
+
+    devices = [{"name": "UGREEN Studio Max2", "max_input_channels": 1},
+               {"name": "MacBook Air Speakers", "max_input_channels": 0},
+               {"name": "MacBook Air Microphone", "max_input_channels": 1}]
+    monkeypatch.setattr(sd, "query_devices", lambda *a: devices)
+    monkeypatch.setattr(audio.config, "MIC_DEVICE", "macbook")
+    assert audio.input_device() == 2
+    monkeypatch.setattr(audio.config, "MIC_DEVICE", "nonexistent")
+    assert audio.input_device() is None
