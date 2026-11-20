@@ -1,4 +1,5 @@
 """Main conversation flow: model -> validated tool call -> result -> reply."""
+import threading
 from typing import Callable
 
 import config
@@ -10,6 +11,7 @@ class Assistant:
     def __init__(self, brain: Brain | None = None, registry: ToolRegistry | None = None,
                  confirm: Callable[[str], bool] | None = None, memory=None) -> None:
         self.confirm = confirm
+        self._lock = threading.Lock()  # voice and typed requests share one conversation
         self.memory = memory
         self.brain = brain or Brain()
         self.registry = registry or default_registry(memory=memory, brain=self.brain)
@@ -25,7 +27,11 @@ class Assistant:
             prompt += " Known facts about the user: " + "; ".join(f"{k} = {v}" for k, v in prefs.items()) + "."
         return prompt
 
-    def handle(self, user_text: str) -> str:
+    def handle(self, user_text: str, confirm: Callable[[str], bool] | None = None) -> str:
+        with self._lock:
+            return self._handle(user_text, confirm or self.confirm)
+
+    def _handle(self, user_text: str, confirm: Callable[[str], bool] | None) -> str:
         self.messages[0]["content"] = self._system_prompt()  # pick up newly remembered facts
         self.messages.append({"role": "user", "content": user_text})
         self.last_tool_calls = []
@@ -46,7 +52,7 @@ class Assistant:
                 if len(self.last_tool_calls) >= config.MAX_TOOL_CALLS_PER_REQUEST:
                     outcome = {"ok": False, "error": "Tool call limit reached for this request."}
                 else:
-                    outcome = self.registry.execute(name, args, self.confirm)
+                    outcome = self.registry.execute(name, args, confirm)
                 self.last_tool_calls.append((name, args, outcome))
                 if self.memory is not None:
                     self.memory.log_task(name, args, outcome["ok"])

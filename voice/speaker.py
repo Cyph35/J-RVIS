@@ -1,6 +1,7 @@
 """Text-to-speech via the built-in macOS `say` command."""
 import re
 import subprocess
+import threading
 
 import config
 
@@ -18,6 +19,7 @@ class Speaker:
         self.voice = voice
         self.rate = rate
         self._proc: subprocess.Popen | None = None
+        self._lock = threading.Lock()  # one voice at a time
 
     def _cmd(self, text: str, voice: str | None) -> list[str]:
         cmd = ["say", "-r", str(self.rate)]
@@ -30,6 +32,10 @@ class Speaker:
         text = clean_for_speech(text)
         if not text:
             return True
+        with self._lock:
+            return self._speak(text)
+
+    def _speak(self, text: str) -> bool:
         for voice in (self.voice, None):  # fall back to the system voice if ours is missing
             try:
                 self._proc = subprocess.Popen(self._cmd(text, voice), stderr=subprocess.PIPE)

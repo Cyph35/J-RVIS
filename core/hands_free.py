@@ -22,7 +22,8 @@ def is_yes(text: str) -> bool:
 
 def run(assistant, wake, record: Callable, transcribe: Callable[[object], str], say: Callable[[str], bool],
         tracker: StateTracker, stop: threading.Event, muted: threading.Event, log=print,
-        manual: threading.Event | None = None) -> None:
+        manual: threading.Event | None = None, verify: Callable | None = None,
+        on_turn: Callable | None = None) -> None:
     def confirm(summary: str) -> bool:
         """Spoken confirmation. Silence or anything but a clear yes means NO."""
         tracker.set(State.SPEAKING)
@@ -33,7 +34,6 @@ def run(assistant, wake, record: Callable, transcribe: Callable[[object], str], 
         tracker.set(State.PROCESSING)
         return audio is not None and is_yes(transcribe(audio))
 
-    assistant.confirm = confirm
     while not stop.is_set():
         tracker.set(State.MUTED if muted.is_set() else State.IDLE)
         if not wake.wait_for_wake(stop, muted, manual):
@@ -46,15 +46,23 @@ def run(assistant, wake, record: Callable, transcribe: Callable[[object], str], 
                 log("(didn't hear a request)")
                 continue
             tracker.set(State.PROCESSING)
+            if verify is not None:
+                accepted, score = verify(audio)
+                if not accepted:
+                    log(f"(voice not recognized - ignored, similarity {score:.2f})")
+                    continue
             text = transcribe(audio)
             if not text:
                 log("(couldn't make out any words)")
                 continue
-            log(f"you said> {text}")
-            reply = assistant.handle(text)
-            log(f"jarvis> {reply}")
-            for name, args, outcome in assistant.last_tool_calls:
-                log(f"  [tool] {name}({args}) -> {'ok' if outcome['ok'] else 'FAILED'}")
+            reply = assistant.handle(text, confirm=confirm)
+            if on_turn:
+                on_turn(text, reply, list(assistant.last_tool_calls))
+            else:
+                log(f"you said> {text}")
+                log(f"jarvis> {reply}")
+                for name, args, outcome in assistant.last_tool_calls:
+                    log(f"  [tool] {name}({args}) -> {'ok' if outcome['ok'] else 'FAILED'}")
             tracker.set(State.SPEAKING)
             if not say(reply):
                 log("  (audio playback failed - reply shown as text only)")

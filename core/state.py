@@ -24,3 +24,14 @@ class StateTracker:
             self.history.append(state)
             if self._on_change:
                 self._on_change(state)
+
+
+def status_color(state: State, muted: bool, busy: bool = False) -> str:
+    """green = running/idle, orange = active, black = muted, red = error."""
+    if muted:
+        return "black"
+    if state == State.ERROR:
+        return "red"
+    if busy or state in (State.LISTENING, State.PROCESSING, State.SPEAKING):
+        return "orange"
+    return "green"

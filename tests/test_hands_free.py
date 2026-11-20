@@ -19,7 +19,7 @@ class FakeAssistant:
     confirm = None
     last_tool_calls = []
 
-    def handle(self, text):
+    def handle(self, text, confirm=None):
         return f"ok: {text}"
 
 
@@ -74,7 +74,26 @@ def test_manual_trigger_passed_to_wake_and_icons():
 
 
 def test_icon_colors():
-    from interface.menubar import icon_for
-    assert icon_for(State.IDLE, False) == "🟢"
-    assert icon_for(State.LISTENING, False) == icon_for(State.SPEAKING, False) == "🟠"
-    assert icon_for(State.IDLE, True) == "⚫" and icon_for(State.ERROR, False) == "🔴"
+    from core.state import status_color
+    assert status_color(State.IDLE, False) == "green"
+    assert status_color(State.LISTENING, False) == status_color(State.SPEAKING, False) == "orange"
+    assert status_color(State.IDLE, False, busy=True) == "orange"
+    assert status_color(State.IDLE, True) == "black" and status_color(State.ERROR, False) == "red"
+
+
+def test_unrecognized_voice_is_ignored():
+    said, logs = [], []
+    hands_free.chime = lambda: None
+    hands_free.run(FakeAssistant(), FakeWake(1), lambda: [1], lambda a: "open calculator",
+                   lambda t: said.append(t) or True, StateTracker(), threading.Event(), threading.Event(),
+                   logs.append, verify=lambda a: (False, 0.12))
+    assert said == [] and any("not recognized" in l for l in logs)
+
+
+def test_on_turn_receives_structured_result():
+    turns = []
+    hands_free.chime = lambda: None
+    hands_free.run(FakeAssistant(), FakeWake(1), lambda: [1], lambda a: "hello",
+                   lambda t: True, StateTracker(), threading.Event(), threading.Event(), print,
+                   on_turn=lambda u, r, c: turns.append((u, r)))
+    assert turns == [("hello", "ok: hello")]

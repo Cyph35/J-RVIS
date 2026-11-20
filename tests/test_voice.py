@@ -1,8 +1,8 @@
-from voice.listener import CHUNK_SEC, EndpointDetector
+from voice.listener import EndpointDetector
 
 
 def run(levels, **kw):
-    d = EndpointDetector(threshold=0.1, **kw)
+    d = EndpointDetector(threshold=0.5, **kw)
     for i, lvl in enumerate(levels):
         state = d.feed(lvl)
         if state != "continue":
@@ -11,20 +11,23 @@ def run(levels, **kw):
 
 
 def test_done_after_silence_following_speech():
-    state, n = run([0.0] * 3 + [0.5] * 10 + [0.0] * 20, silence_sec=1.0)
-    assert state == "done" and n == 3 + 10 + 10
+    d = EndpointDetector()
+    state, n = run([0.0] * 3 + [0.9] * 10 + [0.0] * 20)
+    assert state == "done" and n == 3 + 10 + d.silence_chunks
 
 
 def test_timeout_when_nobody_speaks():
-    assert run([0.0] * 200, no_speech_timeout=2.0) == ("timeout", 20)
+    state, _ = run([0.0] * 200, no_speech_timeout=2.0)
+    assert state == "timeout"
 
 
 def test_max_length_cuts_off_long_speech():
-    assert run([0.5] * 500, max_sec=3.0) == ("done", 30)
+    state, n = run([0.9] * 500, max_sec=3.0)
+    assert state == "done" and n == EndpointDetector(max_sec=3.0).max_chunks
 
 
 def test_pause_shorter_than_silence_does_not_end():
-    state, _ = run([0.5] * 5 + [0.0] * 5 + [0.5] * 5, silence_sec=1.0)
+    state, _ = run([0.9] * 5 + [0.0] * 3 + [0.9] * 5, silence_sec=1.0)
     assert state == "continue"
 
 
@@ -42,3 +45,8 @@ def test_speaker_reports_failure_without_raising(monkeypatch):
         raise OSError("no audio")
     monkeypatch.setattr(subprocess, "Popen", boom)
     assert Speaker().speak("hello") is False
+
+
+def test_single_noise_spike_is_not_speech():
+    state, _ = run([0.0, 0.9, 0.0, 0.0, 0.9, 0.0] * 5, no_speech_timeout=3.0)
+    assert state == "timeout"

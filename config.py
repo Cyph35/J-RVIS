@@ -19,7 +19,7 @@ SYSTEM_PROMPT = (
 )
 
 # Speech-to-text (local). base.en is fast on an M2; try "small.en" for better accuracy.
-WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base.en")
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small.en")
 
 # Text-to-speech (macOS `say`). Daniel (UK) suits JARVIS; list voices with: say -v '?'
 SPEAK_VOICE = os.getenv("SPEAK_VOICE", "Daniel")
@@ -38,3 +38,8 @@ MAX_TOOL_CALLS_PER_REQUEST = 6
 # Menu bar app + global hotkeys (pynput syntax). Needs Input Monitoring permission.
 HOTKEY_WAKE = os.getenv("HOTKEY_WAKE", "<ctrl>+<alt>+j")
 HOTKEY_MUTE = os.getenv("HOTKEY_MUTE", "<ctrl>+<alt>+m")
+
+# Speaker verification ("only respond to my voice"). Voiceprint stays on this Mac in data/.
+SPEAKER_MODEL = ROOT / "data" / "models" / "campplus.onnx"
+VOICEPRINT_PATH = ROOT / "data" / "voiceprint.npy"
+SPEAKER_THRESHOLD = float(os.getenv("SPEAKER_THRESHOLD", "0.5"))  # higher = stricter

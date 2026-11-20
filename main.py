@@ -103,10 +103,19 @@ def main() -> None:
         print("All saved history, preferences and task logs were deleted.")
         return
     assistant = Assistant(confirm=ask_confirm, memory=memory)
-    if "--menubar" in sys.argv:
-        from interface.menubar import JarvisMenuBar
+    if "--gui" in sys.argv or "--menubar" in sys.argv:
+        from interface import dashboard
+        from voice.speaker import Speaker
 
-        JarvisMenuBar(assistant).run()
+        dashboard.run(assistant, Speaker())
+        return
+    if "--enroll" in sys.argv:
+        from core.hands_free import chime
+        from voice.enroll import run_enrollment
+        from voice.listener import record_utterance
+        from voice.speaker_id import SpeakerVerifier
+
+        print(run_enrollment(SpeakerVerifier(), lambda: record_utterance(on_status=lambda m: None), print, chime))
         return
     if "--wake" in sys.argv:
         wake_loop(assistant)

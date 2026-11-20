@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS task_log (
 def connect(path: str | Path = config.DB_PATH) -> sqlite3.Connection:
     if str(path) != ":memory:":
         Path(path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(path)
+    # The GUI uses the assistant from several threads; Memory serializes access with a lock.
+    conn = sqlite3.connect(path, check_same_thread=False)
     conn.executescript(SCHEMA)
     return conn
