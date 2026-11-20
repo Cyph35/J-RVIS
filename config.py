@@ -17,3 +17,6 @@ SYSTEM_PROMPT = (
     "Never invent tools. After a tool result, report it honestly in one or two "
     "short sentences; if the tool reports an error, say so and do not claim success."
 )
+
+# Speech-to-text (local). base.en is fast on an M2; try "small.en" for better accuracy.
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base.en")
