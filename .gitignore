@@ -1,7 +1,19 @@
-.venv/
-__pycache__/
-*.py[cod]
-.env
-.DS_Store
-.pytest_cache/
+# Models, caches, environments and personal data never go in this repo
 data/
+hf/
+toolchain/
+workspace/
+.venv/
+node_modules/
+target/
+dist/
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+.env
+voice-lab/bin/
+voice-lab/lib/
+voice-lab/include/
+*.wav
+*.aiff

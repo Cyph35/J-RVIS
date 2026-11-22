@@ -1,0 +1,7 @@
+{
+  "_about": "JARVIS safety rules. Edit this file to change them; restart JARVIS afterwards. Anything outside these rules is refused, even if you say yes.",
+  "read_dirs": ["/Volumes/Acer/JARVIS", "~/Desktop", "~/Documents", "~/Downloads"],
+  "write_dirs": ["/Volumes/Acer/JARVIS/workspace"],
+  "protected_dirs": ["/Volumes/Acer/JARVIS/data", "/Volumes/Acer/JARVIS/OpenJarvis", "/Volumes/Acer/JARVIS/voice-lab", "/Volumes/Acer/JARVIS/toolchain", "/System", "/usr", "/bin", "/sbin", "/etc", "/private", "/Library", "/Applications", "~/Library", "~/.ssh", "~/.config", "~/.zshrc", "~/.zprofile"],
+  "backup_dir": "/Volumes/Acer/JARVIS/data/backups/files"
+}
